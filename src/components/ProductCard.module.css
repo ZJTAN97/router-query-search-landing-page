@@ -1,0 +1,13 @@
+.card[data-new] {
+  animation: highlight 6s ease-out;
+}
+
+@keyframes highlight {
+  0%,
+  83% {
+    background-color: var(--mantine-color-blue-light);
+  }
+  100% {
+    background-color: var(--mantine-color-body);
+  }
+}
