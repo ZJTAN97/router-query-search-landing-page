@@ -2,7 +2,15 @@ export type Product = {
   id: string
   title: string
   description: string
+  createdAt: number
 }
+
+export type ProductsPage = {
+  items: Product[]
+  nextCursor?: string
+}
+
+const PAGE_SIZE = 6
 
 const ADJECTIVES = ['Wireless', 'Ergonomic', 'Compact', 'Smart', 'Portable', 'Solar', 'Vintage', 'Modular']
 const NOUNS = ['Headphones', 'Keyboard', 'Lamp', 'Backpack', 'Speaker', 'Monitor', 'Kettle', 'Chair']
@@ -20,15 +28,20 @@ function makeProduct(): Product {
     id: String(nextId++),
     title: `${adjective} ${noun}`,
     description: `A ${adjective.toLowerCase()} ${noun.toLowerCase()} built for everyday use.`,
+    createdAt: Date.now(),
   }
 }
 
-const products: Product[] = Array.from({ length: 6 }, makeProduct).reverse()
+const products: Product[] = Array.from({ length: 30 }, makeProduct).reverse()
 
-export async function fetchProducts(q: string): Promise<Product[]> {
+export async function fetchProducts(q: string, cursor?: string): Promise<ProductsPage> {
   await new Promise((resolve) => setTimeout(resolve, 300))
   const term = q.trim().toLowerCase()
-  return products.filter((p) => `${p.title} ${p.description}`.toLowerCase().includes(term))
+  const matches = products.filter((p) => `${p.title} ${p.description}`.toLowerCase().includes(term))
+  const start = cursor ? matches.findIndex((p) => p.id === cursor) + 1 : 0
+  const items = matches.slice(start, start + PAGE_SIZE)
+  const hasMore = start + PAGE_SIZE < matches.length
+  return { items, nextCursor: hasMore ? items.at(-1)!.id : undefined }
 }
 
 export function insertRandomProduct() {

@@ -15,7 +15,7 @@ const indexRoute = createRoute({
   validateSearch: (search: Record<string, unknown>): { q?: string } =>
     typeof search.q === 'string' && search.q ? { q: search.q } : {},
   loaderDeps: ({ search }) => ({ q: search.q ?? '' }),
-  loader: ({ context, deps }) => context.queryClient.ensureQueryData(productsQuery(deps.q)),
+  loader: ({ context, deps }) => context.queryClient.ensureInfiniteQueryData(productsQuery(deps.q)),
   component: Landing,
 })
 

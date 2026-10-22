@@ -1,9 +1,11 @@
-import { queryOptions } from '@tanstack/react-query'
+import { infiniteQueryOptions } from '@tanstack/react-query'
 import { fetchProducts } from './api/products'
 
 export const productsQuery = (q: string) =>
-  queryOptions({
+  infiniteQueryOptions({
     queryKey: ['products', { q }],
-    queryFn: () => fetchProducts(q),
+    queryFn: ({ pageParam }) => fetchProducts(q, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
     refetchInterval: 5000,
   })

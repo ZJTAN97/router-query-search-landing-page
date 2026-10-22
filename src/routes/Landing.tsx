@@ -1,8 +1,8 @@
 import { Button, Container, Group, SimpleGrid, Text, TextInput, Title } from '@mantine/core'
-import { useDebouncedCallback } from '@mantine/hooks'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useDebouncedCallback, useIntersection } from '@mantine/hooks'
+import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { insertRandomProduct } from '../api/products'
 import { ProductCard } from '../components/ProductCard'
 import { productsQuery } from '../queries'
@@ -38,16 +38,30 @@ export function Landing() {
 }
 
 function ProductList({ q }: { q: string }) {
-  const { data } = useSuspenseQuery(productsQuery(q))
-  const [initialIds] = useState(() => new Set(data.map((p) => p.id)))
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(productsQuery(q))
+  const products = data.pages.flatMap((page) => page.items)
+  const [newestAtMount] = useState(() => products[0]?.createdAt ?? 0)
+  const { ref, entry } = useIntersection()
 
-  if (data.length === 0) return <Text c="dimmed">No products found.</Text>
+  useEffect(() => {
+    if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage()
+  }, [entry?.isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  if (products.length === 0) return <Text c="dimmed">No products found.</Text>
 
   return (
-    <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
-      {data.map((product) => (
-        <ProductCard key={product.id} product={product} isNew={!initialIds.has(product.id)} />
-      ))}
-    </SimpleGrid>
+    <>
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
+        {products.map((product) => (
+          <ProductCard key={product.id} product={product} isNew={product.createdAt > newestAtMount} />
+        ))}
+      </SimpleGrid>
+      <div ref={ref} />
+      {isFetchingNextPage && (
+        <Text c="dimmed" ta="center" mt="lg">
+          Loading more...
+        </Text>
+      )}
+    </>
   )
 }
