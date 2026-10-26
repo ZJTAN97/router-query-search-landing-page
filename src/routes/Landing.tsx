@@ -40,7 +40,7 @@ export function Landing() {
 function ProductList({ q }: { q: string }) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(productsQuery(q))
   const products = data.pages.flatMap((page) => page.items)
-  const [newestAtMount] = useState(() => products[0]?.createdAt ?? 0)
+  const [newestIdAtMount] = useState(() => products[0]?.id ?? '')
   const { ref, entry } = useIntersection()
 
   useEffect(() => {
@@ -53,7 +53,7 @@ function ProductList({ q }: { q: string }) {
     <>
       <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
         {products.map((product) => (
-          <ProductCard key={product.id} product={product} isNew={product.createdAt > newestAtMount} />
+          <ProductCard key={product.id} product={product} isNew={product.id > newestIdAtMount} />
         ))}
       </SimpleGrid>
       <div ref={ref} />
