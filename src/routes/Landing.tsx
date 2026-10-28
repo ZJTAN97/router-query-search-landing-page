@@ -1,8 +1,9 @@
 import { Button, Container, Group, SimpleGrid, Text, TextInput, Title } from '@mantine/core'
 import { useDebouncedCallback, useIntersection } from '@mantine/hooks'
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
+import { notifications } from '@mantine/notifications'
+import { useInfiniteQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { insertRandomProduct } from '../api/products'
 import { ProductCard } from '../components/ProductCard'
 import { productsQuery } from '../queries'
@@ -16,6 +17,7 @@ export function Landing() {
     (value: string) => navigate({ search: value ? { q: value } : {}, replace: true }),
     300,
   )
+  useNewProductsToast()
 
   return (
     <Container size="lg" py="xl">
@@ -35,6 +37,40 @@ export function Landing() {
       <ProductList key={q} q={q} />
     </Container>
   )
+}
+
+const NEW_PRODUCTS_TOAST_ID = 'new-products'
+
+function useNewProductsToast() {
+  const { data } = useInfiniteQuery(productsQuery(''))
+  const lastSeenIdRef = useRef<string>(undefined)
+  const unseenCountRef = useRef(0)
+
+  useEffect(() => {
+    const products = data?.pages.flatMap((page) => page.items)
+    if (!products?.length) return
+    const lastSeenId = lastSeenIdRef.current
+    lastSeenIdRef.current = products[0].id
+    if (lastSeenId === undefined) return
+
+    const newCount = products.filter((product) => product.id > lastSeenId).length
+    if (newCount === 0) return
+
+    const isOpen = unseenCountRef.current > 0
+    unseenCountRef.current += newCount
+    const message = `${unseenCountRef.current} new product${unseenCountRef.current === 1 ? '' : 's'}`
+    if (isOpen) {
+      notifications.update({ id: NEW_PRODUCTS_TOAST_ID, message })
+    } else {
+      notifications.show({
+        id: NEW_PRODUCTS_TOAST_ID,
+        message,
+        onClose: () => {
+          unseenCountRef.current = 0
+        },
+      })
+    }
+  }, [data])
 }
 
 function ProductList({ q }: { q: string }) {
